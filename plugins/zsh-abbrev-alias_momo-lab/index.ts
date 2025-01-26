@@ -1,0 +1,25 @@
+const plugin: TUG.Plugin = {
+  icon: "💡",
+  name: "zsh-abbrev-alias_momo-lab",
+  displayName: "Zsh Abbrev Alias",
+  type: "shell",
+  description:
+    "This zsh plugin provides functionality similar to Vim's abbreviation expansion.",
+  authors: [
+    {
+      name: "momo-lab",
+      github: "momo-lab",
+    },
+  ],
+  github: "momo-lab/zsh-abbrev-alias",
+  license: ["MIT"],
+  shells: ["zsh"],
+  categories: ["Convenience Function"],
+  keywords: ["zsh", "zsh-plugins", "zsh-plugin", "zle-widgets"],
+  installation: {
+    origin: "github",
+    sourceFiles: ["abbrev-alias.plugin.zsh"],
+  },
+};
+
+export default plugin;

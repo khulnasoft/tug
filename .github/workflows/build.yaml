@@ -1,0 +1,72 @@
+name: Build and release plugins
+
+on:
+  push:
+    paths:
+      - "plugins/**/*"
+      - "index.d.ts"
+      - "!package.json"
+    branches:
+      # We only want to create a new release when
+      # - a pr is merged to main
+      # - we push into main
+      - "main"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.TUG_BOT_TOKEN }}
+          fetch-depth: 2
+      # Install all dependencies
+      - name: install
+        run: npm install
+      # Transpile all plugins from ts to js
+      - name: build
+        run: npm run build
+      - name: "Automated Version Bump"
+        id: "version-bump"
+        uses: "phips28/gh-action-bump-version@master"
+        env:
+          GITHUB_TOKEN: ${{ secrets.TUG_BOT_TOKEN }}
+        with:
+          skip-tag: "true"
+      - name: Publish to npm
+        uses: JS-DevTools/npm-publish@v1
+        with:
+          access: public
+          token: ${{ secrets.NPM_TOKEN }}
+      - name: Rebuild Index
+        run: |
+          npm run update-plugins -- \
+            $(git diff --name-only origin/main origin/main~1 -- plugins/**/*.ts) \
+            $(git diff --name-only origin/main origin/main~1 -- plugins/**/*.md)
+        env:
+          PLUGINS_UPDATE_TOKEN: ${{ secrets.PLUGINS_UPDATE_TOKEN }}
+          INPUT_TOKEN: ""
+      - name: Checkout Cache
+        uses: actions/checkout@v2
+        with:
+          repository: "khulnasoft/node-backend"
+          token: ${{ secrets.TUG_BOT_TOKEN }}
+          path: node-backend/
+      - name: Add @khulnasoft/plugins
+        env: 
+          TAG_VERSION: ${{ steps.version-bump.outputs.newTag }}
+          # See https://github.com/JS-DevTools/npm-publish/issues/15
+          INPUT_TOKEN: ""
+          NPM_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}
+        run: |
+          cd node-backend
+          echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" >> .npmrc
+          yarn upgrade @khulnasoft/plugins
+          rm .npmrc
+          git config user.name "khulnasoft-bot"
+          git config user.email "noreply@khulnasoft.com"
+          git add .
+          git commit -m "Updates @khulnasoft/plugins to $TAG_VERSION"
+          git push

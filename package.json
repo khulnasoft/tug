@@ -1,0 +1,77 @@
+{
+  "name": "@khulnasoft/plugins",
+  "version": "1.11.17",
+  "description": "",
+  "types": "./index.d.ts",
+  "files": [
+    "dist",
+    "index.d.ts"
+  ],
+  "exports": {
+    "./util": {
+      "require": "./dist/cjs/util/index.js",
+      "import": "./dist/esm/util/index.js"
+    },
+    "./plugins/*": {
+      "require": "./dist/cjs/plugins/*.js",
+      "import": "./dist/cjs/plugins/*.js"
+    }
+  },
+  "typesVersions": {
+    "*": {
+      "util": [
+        "dist/cjs/util"
+      ]
+    }
+  },
+  "scripts": {
+    "test": "tsc --noEmit",
+    "clean": "rm -rf dist",
+    "dev": "ts-node compile.ts --watch",
+    "build": "yarn clean && tsc --emitDeclarationOnly --declaration --outDir dist/esm/ && tsc --emitDeclarationOnly --declaration --outDir dist/cjs/ && ts-node compile.ts",
+    "update-plugins": "yarn build && ts-node util/update-plugins.ts",
+    "lint": "eslint '**/*.ts'",
+    "lint:fix": "eslint '**/*.ts' --fix",
+    "prepare": "husky install"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/khulnasoft/plugins.git"
+  },
+  "author": "TUG",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/khulnasoft/plugins/issues"
+  },
+  "homepage": "https://github.com/khulnasoft/plugins",
+  "devDependencies": {
+    "@khulnasoft/eslint-config-tug": "^1.1.0",
+    "@types/finalhandler": "^1.2.0",
+    "@types/node": "^18.0.15",
+    "@types/serve-static": "^1.15.0",
+    "axios": "^1.2.0",
+    "chalk": "^4.1.2",
+    "child_process": "^1.0.2",
+    "chokidar": "^3.5.3",
+    "commander": "^9.4.1",
+    "dotenv": "^16.0.0",
+    "esbuild": "^0.16.5",
+    "eslint": "^8.29.0",
+    "eslint-plugin-prettier": "^4.2.1",
+    "fast-glob": "^3.2.12",
+    "finalhandler": "^1.2.0",
+    "husky": ">=8",
+    "lint-staged": ">=13",
+    "prettier": "^2.8.1",
+    "serve-static": "^1.15.0",
+    "ts-node": "^10.9.1"
+  },
+  "dependencies": {
+    "typescript": "^4.6.3"
+  },
+  "lint-staged": {
+    "*.ts": [
+      "eslint --fix"
+    ]
+  }
+}
