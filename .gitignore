@@ -1,0 +1,13 @@
+bin/tug
+bin/tug.exe
+dist
+target
+pkg
+.DS_Store
+doc/tags
+vendor
+gopath
+*.zwc
+tug
+tmp
+*.patch

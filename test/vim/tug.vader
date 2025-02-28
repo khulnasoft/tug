@@ -1,0 +1,175 @@
+Execute (Setup):
+  let g:dir = fnamemodify(g:vader_file, ':p:h')
+  unlet! g:tug_layout g:tug_action g:tug_history_dir
+  Log 'Test directory: ' . g:dir
+  Save &acd
+
+Execute (tug#run with dir option):
+  let cwd = getcwd()
+  let result = tug#run({ 'source': 'git ls-files', 'options': '--filter=vdr', 'dir': g:dir })
+  AssertEqual ['tug.vader'], result
+  AssertEqual 0, haslocaldir()
+  AssertEqual getcwd(), cwd
+
+  execute 'lcd' fnameescape(cwd)
+  let result = sort(tug#run({ 'source': 'git ls-files', 'options': '--filter e', 'dir': g:dir }))
+  AssertEqual ['tug.vader'], result
+  AssertEqual 1, haslocaldir()
+  AssertEqual getcwd(), cwd
+
+Execute (tug#run with Funcref command):
+  let g:ret = []
+  function! g:TugTest(e)
+    call add(g:ret, a:e)
+  endfunction
+  let result = sort(tug#run({ 'source': 'git ls-files', 'sink': function('g:TugTest'), 'options': '--filter e', 'dir': g:dir }))
+  AssertEqual ['tug.vader'], result
+  AssertEqual ['tug.vader'], sort(g:ret)
+
+Execute (tug#run with string source):
+  let result = sort(tug#run({ 'source': 'echo hi', 'options': '-f i' }))
+  AssertEqual ['hi'], result
+
+Execute (tug#run with list source):
+  let result = sort(tug#run({ 'source': ['hello', 'world'], 'options': '-f e' }))
+  AssertEqual ['hello'], result
+  let result = sort(tug#run({ 'source': ['hello', 'world'], 'options': '-f o' }))
+  AssertEqual ['hello', 'world'], result
+
+Execute (tug#run with string source):
+  let result = sort(tug#run({ 'source': 'echo hi', 'options': '-f i' }))
+  AssertEqual ['hi'], result
+
+Execute (tug#run with dir option and noautochdir):
+  set noacd
+  let cwd = getcwd()
+  call tug#run({'source': ['/foobar'], 'sink': 'e', 'dir': '/tmp', 'options': '-1'})
+  " No change in working directory
+  AssertEqual cwd, getcwd()
+
+  call tug#run({'source': ['/foobar'], 'sink': 'tabe', 'dir': '/tmp', 'options': '-1'})
+  AssertEqual cwd, getcwd()
+  tabclose
+  AssertEqual cwd, getcwd()
+
+Execute (Incomplete tug#run with dir option and autochdir):
+  set acd
+  let cwd = getcwd()
+  call tug#run({'source': [], 'sink': 'e', 'dir': '/tmp', 'options': '-0'})
+  " No change in working directory even if &acd is set
+  AssertEqual cwd, getcwd()
+
+Execute (FIXME: tug#run with dir option and autochdir):
+  set acd
+  call tug#run({'source': ['/foobar'], 'sink': 'e', 'dir': '/tmp', 'options': '-1'})
+  " Working directory changed due to &acd
+  AssertEqual '/foobar', expand('%')
+  AssertEqual '/', getcwd()
+
+Execute (tug#run with dir option and autochdir when final cwd is same as dir):
+  set acd
+  cd /tmp
+  call tug#run({'source': ['/foobar'], 'sink': 'e', 'dir': '/', 'options': '-1'})
+  " Working directory changed due to &acd
+  AssertEqual '/', getcwd()
+
+Execute (tug#wrap):
+  AssertThrows tug#wrap({'foo': 'bar'})
+
+  let opts = tug#wrap('foobar')
+  Log opts
+  AssertEqual 0.9, opts.window.width
+  Assert opts.options =~ '--expect='
+  Assert !has_key(opts, 'sink')
+  Assert has_key(opts, 'sink*')
+
+  let opts = tug#wrap('foobar', {}, 0)
+  Log opts
+  AssertEqual 0.9, opts.window.width
+
+  let opts = tug#wrap('foobar', {}, 1)
+  Log opts
+  Assert !has_key(opts, 'window')
+
+  let opts = tug#wrap('foobar', {'down': '50%'})
+  Log opts
+  AssertEqual '50%', opts.down
+
+  let opts = tug#wrap('foobar', {'down': '50%'}, 1)
+  Log opts
+  Assert !has_key(opts, 'down')
+
+  let opts = tug#wrap('foobar', {'sink': 'e'})
+  Log opts
+  AssertEqual 'e', opts.sink
+  Assert !has_key(opts, 'sink*')
+
+  let opts = tug#wrap('foobar', {'options': '--reverse'})
+  Log opts
+  Assert opts.options =~ '--expect='
+  Assert opts.options =~ '--reverse'
+
+  let g:tug_layout = {'window': 'enew'}
+  let opts = tug#wrap('foobar')
+  Log opts
+  AssertEqual 'enew', opts.window
+
+  let opts = tug#wrap('foobar', {}, 1)
+  Log opts
+  Assert !has_key(opts, 'window')
+
+  let opts = tug#wrap('foobar', {'right': '50%'})
+  Log opts
+  Assert !has_key(opts, 'window')
+  AssertEqual '50%', opts.right
+
+  let opts = tug#wrap('foobar', {'right': '50%'}, 1)
+  Log opts
+  Assert !has_key(opts, 'window')
+  Assert !has_key(opts, 'right')
+
+  let g:tug_action = {'a': 'tabe'}
+  let opts = tug#wrap('foobar')
+  Log opts
+  Assert opts.options =~ '--expect=a'
+  Assert !has_key(opts, 'sink')
+  Assert has_key(opts, 'sink*')
+
+  let opts = tug#wrap('foobar', {'sink': 'e'})
+  Log opts
+  AssertEqual 'e', opts.sink
+  Assert !has_key(opts, 'sink*')
+
+  let g:tug_history_dir = '/tmp'
+  let opts = tug#wrap('foobar', {'options': '--color light'})
+  Log opts
+  Assert opts.options =~ "--history '/tmp/foobar'"
+  Assert opts.options =~ '--color light'
+
+  let g:tug_colors = { 'fg': ['fg', 'Error'] }
+  let opts = tug#wrap({})
+  Assert opts.options =~ '--color=fg:'
+
+Execute (tug#shellescape with sh):
+  AssertEqual '''''', tug#shellescape('', 'sh')
+  AssertEqual '''\''', tug#shellescape('\', 'sh')
+  AssertEqual '''""''', tug#shellescape('""', 'sh')
+  AssertEqual '''foobar>''', tug#shellescape('foobar>', 'sh')
+  AssertEqual '''\\\"\\\''', tug#shellescape('\\\"\\\', 'sh')
+  AssertEqual '''echo ''\''''a''\'''' && echo ''\''''b''\''''''', tug#shellescape('echo ''a'' && echo ''b''', 'sh')
+
+Execute (tug#shellescape with cmd.exe):
+  AssertEqual '^"^"', tug#shellescape('', 'cmd.exe')
+  AssertEqual '^"\\^"', tug#shellescape('\', 'cmd.exe')
+  AssertEqual '^"\^"\^"^"', tug#shellescape('""', 'cmd.exe')
+  AssertEqual '^"foobar^>^"', tug#shellescape('foobar>', 'cmd.exe')
+  AssertEqual '^"\\\\\\\^"\\\\\\^"', tug#shellescape('\\\"\\\', 'cmd.exe')
+  AssertEqual '^"echo ''a'' ^&^& echo ''b''^"', tug#shellescape('echo ''a'' && echo ''b''', 'cmd.exe')
+
+  AssertEqual '^"C:\Program Files ^(x86^)\\^"', tug#shellescape('C:\Program Files (x86)\', 'cmd.exe')
+  AssertEqual '^"C:/Program Files ^(x86^)/^"', tug#shellescape('C:/Program Files (x86)/', 'cmd.exe')
+  AssertEqual '^"%%USERPROFILE%%^"', tug#shellescape('%USERPROFILE%', 'cmd.exe')
+
+Execute (Cleanup):
+  unlet g:dir
+  Restore
