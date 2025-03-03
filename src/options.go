@@ -1260,11 +1260,11 @@ func parseTheme(defaultTheme *tui.ColorTheme, str string) (*tui.ColorTheme, erro
 						if rrggbb.MatchString(component) {
 							cattr.Color = tui.HexToColor(component)
 						} else {
-							ansi32, err := strconv.Atoi(component)
+							ansi32, err := strconv.ParseInt(component, 10, 32)
 							if err != nil || ansi32 < -1 || ansi32 > 255 {
 								fail()
 							}
-							cattr.Color = tui.Color(ansi32)
+							cattr.Color = tui.Color(int32(ansi32))
 						}
 					}
 				}
