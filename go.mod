@@ -1,7 +1,7 @@
 module github.com/khulnasoft/tug
 
 require (
-	github.com/charlievieth/fastwalk v1.0.9
+	github.com/charlievieth/fastwalk v1.0.10
 	github.com/gdamore/tcell/v2 v2.8.1
 	github.com/khulnasoft-lab/go-shellwords v0.0.0-20250228144234-9641ff89ebad
 	github.com/mattn/go-isatty v0.0.20
